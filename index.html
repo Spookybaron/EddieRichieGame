@@ -1,0 +1,99 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, viewport-fit=cover">
+  <meta name="color-scheme" content="dark">
+  <title>Eddie vs Richie</title>
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Crect fill='%235a3020' width='16' height='16'/%3E%3Crect fill='%23ffe08a' x='3' y='3' width='10' height='10'/%3E%3C/svg%3E">
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+  <div id="app">
+    <div id="stage">
+      <canvas id="game" width="320" height="224" aria-label="Eddie versus Richie game"></canvas>
+    </div>
+
+      <div id="title-screen" class="panel" role="dialog" aria-labelledby="game-title">
+        <div class="panel-inner">
+          <h1 id="game-title">EDDIE vs RICHIE</h1>
+          <p class="tag">A scrap in the flat. Hit each other with whatever you can grab.</p>
+          <div class="choices">
+            <button type="button" data-mode="1p-eddie">1 Player — play as Eddie</button>
+            <button type="button" data-mode="1p-richie">1 Player — play as Richie</button>
+            <button type="button" data-mode="2p">2 Players — one keyboard</button>
+          </div>
+          <div class="help">
+            <h2>How to play</h2>
+            <p>Eddie is slower and tougher. He swings a cricket bat.</p>
+            <p>Richie is quicker but can’t take as many hits. He picks things up and throws them.</p>
+            <div class="cols">
+              <div>
+                <h3>Eddie (P1)</h3>
+                <p>Move: W A S D<br>Swing bat: F</p>
+              </div>
+              <div>
+                <h3>Richie (P2)</h3>
+                <p>Move: arrow keys<br>Throw: K<br>Pick up / drop: L</p>
+              </div>
+            </div>
+            <p class="note">On a phone, use the pad and buttons (1 player). P or Esc pauses. M turns the beeps off. Space starts a 1-player game as Eddie.</p>
+          </div>
+          <button type="button" class="secondary" data-action="mute" data-mute-label>Sound: on</button>
+        </div>
+      </div>
+
+      <div id="pause-screen" class="panel" hidden>
+        <div class="panel-inner">
+          <h1>PAUSED</h1>
+          <p class="tag">P or Esc to carry on.</p>
+          <div class="choices">
+            <button type="button" data-action="resume">Resume</button>
+            <button type="button" class="secondary" data-action="quit">Back to title</button>
+            <button type="button" class="secondary" data-action="mute" data-mute-label>Sound: on</button>
+          </div>
+        </div>
+      </div>
+
+      <div id="win-screen" class="panel" hidden>
+        <div class="panel-inner">
+          <h1 id="win-title">SOMEONE WINS</h1>
+          <p id="win-blurb" class="tag"></p>
+          <div class="choices">
+            <button type="button" data-action="again">Play again</button>
+            <button type="button" class="secondary" data-action="quit">Back to title</button>
+          </div>
+          <p class="note">Or press Space to play again.</p>
+        </div>
+      </div>
+
+    <div id="touch" hidden>
+      <div class="dpad" aria-label="Move">
+        <span class="gap"></span>
+        <button type="button" class="up" data-touch="up" aria-label="Up">▲</button>
+        <span class="gap"></span>
+        <button type="button" class="left" data-touch="left" aria-label="Left">◀</button>
+        <button type="button" class="down" data-touch="down" aria-label="Down">▼</button>
+        <button type="button" class="right" data-touch="right" aria-label="Right">▶</button>
+      </div>
+      <div class="actions">
+        <button type="button" data-touch="pickup"><span class="label">PICK UP</span></button>
+        <button type="button" data-touch="attack"><span class="label">BAT</span></button>
+      </div>
+    </div>
+  </div>
+
+  <script src="js/sprite-data.js"></script>
+  <script src="js/config.js"></script>
+  <script src="js/audio.js"></script>
+  <script src="js/sprites.js"></script>
+  <script src="js/input.js"></script>
+  <script src="js/levels.js"></script>
+  <script src="js/level-flat.js"></script>
+  <script src="js/entities.js"></script>
+  <script src="js/ai.js"></script>
+  <script src="js/renderer.js"></script>
+  <script src="js/game.js"></script>
+  <script src="js/main.js"></script>
+</body>
+</html>
