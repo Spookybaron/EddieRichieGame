@@ -99,26 +99,57 @@ ER.Renderer = {
   _drawHud: function (ctx, state) {
     var eddie = state.eddie;
     var richie = state.richie;
-    ctx.fillStyle = "rgba(20,14,12,0.55)";
-    ctx.fillRect(0, 0, ER.VIEW_W, 22);
+    /* Keep every HUD label inside a padded band so nothing is cropped
+       when the canvas is scaled to a phone or a desktop window. */
+    var SAFE = 6;
+    var NAME = 6;
+    var GAP = 3;
+    var BAR_H = 8;
+    var BAR_W = 118;
+    var barY = SAFE + NAME + GAP;
+    var hudH = barY + BAR_H + 5;
 
-    this._bar(ctx, 4, 8, 118, 8, eddie.hp / eddie.maxHp, "#d4b44a", "EDDIE", true);
-    this._bar(ctx, ER.VIEW_W - 122, 8, 118, 8, richie.hp / richie.maxHp, "#d45a6a", "RICHIE", false);
+    ctx.save();
+    ctx.textBaseline = "top";
+    ctx.fillStyle = "rgba(20,14,12,0.55)";
+    ctx.fillRect(0, 0, ER.VIEW_W, hudH);
+
+    this._name(ctx, "EDDIE", SAFE, SAFE, BAR_W, true);
+    this._bar(ctx, SAFE, barY, BAR_W, BAR_H, eddie.hp / eddie.maxHp, "#d4b44a");
+    this._name(ctx, "RICHIE", ER.VIEW_W - SAFE - BAR_W, SAFE, BAR_W, false);
+    this._bar(ctx, ER.VIEW_W - SAFE - BAR_W, barY, BAR_W, BAR_H, richie.hp / richie.maxHp, "#d45a6a");
 
     if (state.level && state.level.roomAt) {
       var room = state.level.roomAt(state.camX + ER.VIEW_W / 2);
       var label = room ? room.name.toUpperCase() : "";
-      this._fit(ctx, label, 100, 6);
+      this._fit(ctx, label, 110, 6);
+      var rw = 110, rh = 12;
+      var rx = Math.round((ER.VIEW_W - rw) / 2);
+      var ry = ER.VIEW_H - SAFE - rh;
       ctx.fillStyle = "rgba(20,14,12,0.45)";
-      ctx.fillRect(ER.VIEW_W / 2 - 52, ER.VIEW_H - 14, 104, 12);
+      ctx.fillRect(rx, ry, rw, rh);
       ctx.fillStyle = "#f0e2c4";
       ctx.textAlign = "center";
-      ctx.fillText(label, ER.VIEW_W / 2, ER.VIEW_H - 5);
+      ctx.fillText(label, ER.VIEW_W / 2, ry + 3);
       ctx.textAlign = "left";
     }
+    ctx.restore();
   },
 
-  _bar: function (ctx, x, y, w, h, frac, color, label, labelLeft) {
+  _name: function (ctx, label, x, y, w, left) {
+    this._fit(ctx, label, w, 6);
+    ctx.fillStyle = "#fff8e8";
+    if (left) {
+      ctx.textAlign = "left";
+      ctx.fillText(label, x, y);
+    } else {
+      ctx.textAlign = "right";
+      ctx.fillText(label, x + w, y);
+    }
+    ctx.textAlign = "left";
+  },
+
+  _bar: function (ctx, x, y, w, h, frac, color) {
     frac = ER.clamp(frac, 0, 1);
     ctx.fillStyle = "#2a1c18";
     ctx.fillRect(x, y, w, h);
@@ -127,16 +158,6 @@ ER.Renderer = {
     ctx.strokeStyle = "#f0e2c4";
     ctx.lineWidth = 1;
     ctx.strokeRect(x + 0.5, y + 0.5, w - 1, h - 1);
-    this._fit(ctx, label, 70, 6);
-    ctx.fillStyle = "#fff8e8";
-    if (labelLeft) {
-      ctx.textAlign = "left";
-      ctx.fillText(label, x, y - 1);
-    } else {
-      ctx.textAlign = "right";
-      ctx.fillText(label, x + w, y - 1);
-    }
-    ctx.textAlign = "left";
   },
 
   _drawFloats: function (ctx, camX) {
@@ -144,13 +165,13 @@ ER.Renderer = {
     for (var i = 0; i < this.numbers.length; i++) {
       var n = this.numbers[i];
       n.t += 1;
-      var sx = n.x - camX;
-      var sy = n.y - n.t * 0.6;
-      if (sx < 4 || sx > ER.VIEW_W - 4) { /* keep on the view if we can */ }
+      var sx = ER.clamp(n.x - camX, 16, ER.VIEW_W - 16);
+      var sy = ER.clamp(n.y - n.t * 0.6, 30, ER.VIEW_H - 18);
       ctx.globalAlpha = Math.max(0, 1 - n.t / 40);
       this._fit(ctx, n.text, 80, 8);
       ctx.fillStyle = n.color;
       ctx.textAlign = "center";
+      ctx.textBaseline = "middle";
       ctx.fillText(n.text, sx, sy);
       ctx.globalAlpha = 1;
       if (n.t < 40) next.push(n);
