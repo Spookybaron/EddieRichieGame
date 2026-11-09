@@ -32,6 +32,57 @@ ER.Player = function (kind, x, y, facing, control) {
   this.alive = true;
   this.throwPower = st.throwPower || 1;
   this.throwDamage = st.throwDamage || 1;
+  /* Purely visual motion: hop height (z, negative is up), turn squash,
+     landing squash, which way the last hit knocked them, KO timer. */
+  this.z = 0;
+  this.vz = 0;
+  this.turnT = 0;
+  this.landT = 0;
+  this.knockDir = 0;
+  this.koT = 0;
+  this.lastFacing = facing;
+  this.ghosts = [];
+};
+
+/* Make the character jump a little (victory hops, getting knocked out). */
+ER.Player.prototype.hop = function (power) {
+  if (this.z < 0) return;
+  this.vz = -power;
+  this.z = -0.01;
+};
+
+ER.Player.prototype._visualTick = function () {
+  if (this.turnT > 0) this.turnT -= 1;
+  if (this.landT > 0) this.landT -= 1;
+  if (this.z < 0 || this.vz < 0) {
+    this.vz += 0.22;
+    this.z += this.vz;
+    if (this.z >= 0) {
+      this.z = 0;
+      if (this.vz > 2.2) {
+        /* Bounce once on a hard landing. */
+        this.vz = -this.vz * 0.32;
+        this.z = -0.01;
+        if (ER.FX) ER.FX.dust(this.x, this.y, 6, 0);
+      } else {
+        this.vz = 0;
+      }
+      this.landT = 7;
+    }
+  }
+  if (!this.alive) this.koT += 1;
+  if (this.facing !== this.lastFacing) {
+    this.lastFacing = this.facing;
+    this.turnT = 6;
+    if (ER.FX && this.alive) ER.FX.dust(this.x, this.y, 2, -this.facing);
+  }
+  /* Quick after-images when someone is really moving. */
+  var sp = Math.abs(this.vx) + Math.abs(this.vy);
+  if (this.alive && sp > 1.55 && this.idleT % 3 === 0) {
+    this.ghosts.push({ x: this.x, y: this.y + this.z, name: this.animName(), flip: this.facing < 0, t: 0 });
+  }
+  for (var i = 0; i < this.ghosts.length; i++) this.ghosts[i].t += 1;
+  this.ghosts = this.ghosts.filter(function (g) { return g.t < 10; });
 };
 
 ER.Player.prototype.hurtbox = function () {
@@ -44,11 +95,18 @@ ER.Player.prototype.takeDamage = function (amount, fromX) {
   this.stun = 16;
   this.iframes = 28;
   this.flash = 10;
-  this.vx += (this.x >= fromX ? 1 : -1) * (amount > 16 ? 2.6 : 1.8);
+  this.knockDir = this.x >= fromX ? 1 : -1;
+  this.vx += this.knockDir * (amount > 16 ? 2.6 : 1.8);
   this.action = null;
+  if (ER.FX) ER.FX.dust(this.x, this.y, 4, this.knockDir);
   if (this.hp <= 0) {
     this.alive = false;
     this.hp = 0;
+    /* Knocked clean off their feet. */
+    this.vx += this.knockDir * 1.6;
+    this.vz = -3.4;
+    this.z = -0.01;
+    if (this.holding) this.drop();
   }
   return true;
 };
@@ -136,6 +194,7 @@ ER.Player.prototype.update = function (cmd, items, level, opponent) {
   if (this.flash > 0) this.flash -= 1;
   if (this.cooldown > 0) this.cooldown -= 1;
   if (this.stun > 0) this.stun -= 1;
+  this._visualTick();
 
   if (!this.alive) {
     this.vx *= 0.8;
@@ -173,7 +232,11 @@ ER.Player.prototype.update = function (cmd, items, level, opponent) {
       this.vx = (this.vx / mag) * spd;
       this.vy = (this.vy / mag) * spd;
     }
-    if (Math.abs(mx) + Math.abs(my) > 0) this.walkPhase += 1;
+    if (Math.abs(mx) + Math.abs(my) > 0) {
+      this.walkPhase += 1;
+      /* A puff of dust on every footfall. */
+      if (this.walkPhase % 16 === 0 && ER.FX) ER.FX.dust(this.x - this.facing * 5, this.y, 1, -this.facing);
+    }
     if (cmd.face) this.facing = cmd.face;
     if (cmd.attack) {
       /* Eddie: F always swings the bat. Richie: K throws (or grabs if empty-handed). */
@@ -216,7 +279,7 @@ ER.Player.prototype._tryBatHit = function (opponent) {
     if (Math.abs(opponent.y - this.y) < 22 && opponent.takeDamage(s.damage, this.x)) {
       this.action.hit = true;
       ER.Audio.hit();
-      ER.Game.onHit(opponent, s.damage, this.x, "bat");
+      ER.Game.onHit(opponent, s.damage, this.x, "bat", "bat");
     }
   }
 };
@@ -235,7 +298,7 @@ ER.Player.prototype._resolveChair = function (items) {
 
 ER.Player.prototype.animName = function () {
   if (!this.alive) return "lose";
-  if (ER.Game && ER.Game.winner === this.kind) return "win";
+  if (ER.Game && (ER.Game.winner === this.kind || ER.Game.koWinner === this.kind)) return "win";
   if (this.stun > 0) return "hurt";
   if (this.action && this.action.type === "swing") return "swing";
   if (this.action && this.action.type === "throw") {
@@ -263,6 +326,7 @@ ER.Item = function (type, x, y) {
   this.holder = null;
   this.hitUsed = false;
   this.life = 0;
+  this.trail = [];
 };
 
 ER.Item.prototype.update = function (players, level) {
@@ -286,6 +350,8 @@ ER.Item.prototype.update = function (players, level) {
   if (this.state !== "fly") return;
 
   var spec = ER.ITEM_SPEC[this.type];
+  this.trail.push({ x: this.x, y: this.y, a: this.angle });
+  if (this.trail.length > 5) this.trail.shift();
   this.vy += spec.gravity;
   this.x += this.vx;
   this.y += this.vy;
@@ -310,7 +376,7 @@ ER.Item.prototype.update = function (players, level) {
         if (Math.abs(pl.y - this.y) < 48 && pl.takeDamage(dmg, this.x)) {
           this.hitUsed = true;
           ER.Audio.hit();
-          ER.Game.onHit(pl, dmg, this.x, this.thrower ? this.thrower.kind : "object");
+          ER.Game.onHit(pl, dmg, this.x, this.thrower ? this.thrower.kind : "object", this.type);
           this.vx *= -0.25;
           this.vy = Math.min(this.vy, 0.4);
           break;
@@ -330,6 +396,8 @@ ER.Item.prototype.update = function (players, level) {
       this.vy = 0;
       this.spin = 0;
       this.thrower = null;
+      this.trail = [];
+      if (ER.FX) ER.FX.dust(this.x, this.y, 3, 0);
     }
   }
 };

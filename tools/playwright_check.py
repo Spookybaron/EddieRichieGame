@@ -1,12 +1,13 @@
 #!/usr/bin/env python3
 import json
+import os
 import sys
 from pathlib import Path
 
 from playwright.sync_api import sync_playwright
 
 PORT = "8765"
-SCREENS = Path("/workspace/eddie-richie-game/screens")
+SCREENS = Path(os.environ.get("SCREENS", "/workspace/eddie-richie-game/screens"))
 SCREENS.mkdir(parents=True, exist_ok=True)
 
 JS_METRICS = """
@@ -47,10 +48,11 @@ def main():
     errors = []
     results = {}
     with sync_playwright() as p:
-        browser = p.chromium.launch(
-            executable_path="/usr/bin/google-chrome",
-            args=["--no-sandbox", "--disable-dev-shm-usage"],
-        )
+        chrome = "/usr/bin/google-chrome"
+        launch = {"args": ["--no-sandbox", "--disable-dev-shm-usage"]}
+        if os.path.exists(chrome):
+            launch["executable_path"] = chrome
+        browser = p.chromium.launch(**launch)
         page = browser.new_page(viewport={"width": 1280, "height": 800})
         page.on("console", lambda msg: errors.append(f"console:{msg.text}") if msg.type == "error" else None)
         page.on("pageerror", lambda err: errors.append(f"pageerror:{err}"))
@@ -209,6 +211,33 @@ def main():
         if st["richie"]["control"] != "p1" or st["eddie"]["control"] != "cpu":
             raise RuntimeError("1p-richie controls wrong")
         results["onePlayerRichie"] = {"ok": True}
+
+        # --- 1 player as Richie: arrow keys and K must work too -------------
+        page.evaluate("() => { ER.Test.start('1p-richie'); ER.Game.eddie.control = 'none'; }")
+        x0 = page.evaluate("() => ER.Game.richie.x")
+        page.keyboard.down("ArrowRight"); page.wait_for_timeout(400); page.keyboard.up("ArrowRight")
+        x1 = page.evaluate("() => ER.Game.richie.x")
+        if x1 - x0 < 10:
+            raise RuntimeError(f"arrow keys did not move Richie in 1-player mode: {x0} -> {x1}")
+        results["richieArrows"] = {"moved": round(x1 - x0, 1)}
+
+        # --- Best of three: a knockout starts the next round ----------------
+        rounds = page.evaluate(
+            """() => {
+              ER.Test.start('2p');
+              ER.Test.koRound('richie');
+              const afterKo = ER.Test.state();
+              ER.Test.step(400);
+              const next = ER.Test.state();
+              return { koPhase: afterKo.phase, wins: next.wins, round: next.round, phase: next.phase,
+                       eddieHp: next.eddie.hp, richieHp: next.richie.hp, screen: next.screen };
+            }"""
+        )
+        if rounds["koPhase"] != "ko" or rounds["round"] != 2 or rounds["wins"]["eddie"] != 1 or rounds["screen"] != "play":
+            raise RuntimeError(f"round flow wrong: {rounds}")
+        if rounds["richieHp"] != 90 or rounds["eddieHp"] != 140:
+            raise RuntimeError(f"health not reset for round 2: {rounds}")
+        results["rounds"] = rounds
 
         page.set_viewport_size({"width": 390, "height": 844})
         page.evaluate("() => { ER.Test.gotoTitle(); ER.fitStage(); }")

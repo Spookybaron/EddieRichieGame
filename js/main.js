@@ -33,20 +33,35 @@ ER.boot = function () {
   ER.Renderer.resizeCanvas(canvas);
   ER.Input.init();
   ER.Game.init();
+  ER.UI.init();
   ER.fitStage();
   window.addEventListener("resize", ER.fitStage);
   window.addEventListener("orientationchange", function () { setTimeout(ER.fitStage, 80); });
 
   ER.Sprites.load(function () {
     document.getElementById("app").classList.add("ready");
-    var last = 0;
+    ER.Renderer.resetHud(ER.Game);
+    /* Fixed 60 updates a second whatever the screen's refresh rate,
+       so the game never runs at half speed on a jittery 60 Hz display
+       or double speed on a 120 Hz one. */
+    var STEP = 1000 / 60;
+    var last = performance.now();
+    var acc = 0;
     function loop(now) {
-      if (now - last >= 16) {
-        last = now;
+      acc += Math.min(250, now - last);
+      last = now;
+      var steps = 0;
+      while (acc >= STEP && steps < 5) {
         ER.Game.update();
+        acc -= STEP;
+        steps += 1;
+      }
+      if (steps === 5) acc = 0;
+      if (steps > 0) {
         ctx.imageSmoothingEnabled = false;
         ctx.clearRect(0, 0, ER.VIEW_W, ER.VIEW_H);
         ER.Renderer.draw(ctx, ER.Game);
+        ER.UI.draw(ER.Game);
       }
       requestAnimationFrame(loop);
     }

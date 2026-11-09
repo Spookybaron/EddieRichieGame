@@ -213,3 +213,313 @@ body.has-touch #touch { margin-top: auto; padding-bottom: max(10px, env(safe-are
   .dpad { grid-template-columns: 44px 44px 44px; grid-template-rows: 40px 40px 40px; }
   .dpad button, .actions button { min-height: 40px; min-width: 44px; }
 }
+
+/* ===================== Round-one polish ===================== */
+
+:root {
+  --eddie: #ffd75a;
+  --eddie-dark: #b8892a;
+  --richie: #ff6f8e;
+  --richie-dark: #a83a55;
+  --ink: #1a0e0a;
+  --cream: #fff3d6;
+  --panel: #241712;
+}
+
+body {
+  background:
+    radial-gradient(ellipse at 50% 30%, #2e1e18 0%, #140e0c 70%) fixed;
+}
+
+#stage {
+  box-shadow: 0 0 0 2px #3a2a22, 0 0 0 5px #120a08, 0 14px 40px rgba(0,0,0,0.6);
+  border-radius: 2px;
+}
+
+/* Scanlines over the game picture, very faint. */
+#stage::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background: repeating-linear-gradient(0deg, rgba(0,0,0,0.07) 0 1px, transparent 1px 3px);
+  mix-blend-mode: multiply;
+}
+
+.panel {
+  background: radial-gradient(ellipse at center, rgba(20,12,10,0.72) 0%, rgba(12,8,6,0.9) 80%);
+  backdrop-filter: blur(1.5px);
+}
+
+.panel-inner {
+  position: relative;
+  border: 3px solid var(--ink);
+  outline: 2px solid #e8d2a0;
+  outline-offset: -5px;
+  background: linear-gradient(180deg, #2e1d16 0%, var(--panel) 100%);
+  box-shadow: 0 10px 0 #0c0604, 0 18px 40px rgba(0,0,0,0.55);
+  padding: 14px 14px 12px;
+  animation: panel-in 260ms cubic-bezier(.2,1.4,.4,1) both;
+}
+
+@keyframes panel-in {
+  from { transform: translateY(14px) scale(0.96); opacity: 0; }
+  to   { transform: none; opacity: 1; }
+}
+
+.kicker {
+  margin: 0 0 6px;
+  font-family: "Press Start 2P", monospace;
+  font-size: 8px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: #d8b878;
+}
+
+/* Title logo: chunky pixel letters with a stacked shadow. */
+.logo {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  flex-wrap: wrap;
+  margin: 0 0 8px;
+  font-size: clamp(18px, 6vw, 30px);
+  line-height: 1.1;
+}
+.logo span { display: inline-block; }
+.logo-e {
+  color: var(--eddie);
+  text-shadow: 2px 2px 0 var(--eddie-dark), 4px 4px 0 var(--ink);
+  animation: wobble-l 2.6s ease-in-out infinite;
+}
+.logo-r {
+  color: var(--richie);
+  text-shadow: 2px 2px 0 var(--richie-dark), 4px 4px 0 var(--ink);
+  animation: wobble-r 2.6s ease-in-out infinite;
+}
+.logo-vs {
+  font-size: 0.5em;
+  color: #fff;
+  background: #d8402a;
+  padding: 6px 6px 5px;
+  border: 2px solid var(--ink);
+  box-shadow: 2px 2px 0 var(--ink);
+  transform: rotate(-8deg);
+  animation: vs-pulse 1.3s ease-in-out infinite;
+}
+@keyframes wobble-l { 0%,100% { transform: rotate(-2deg) translateY(0); } 50% { transform: rotate(1deg) translateY(-2px); } }
+@keyframes wobble-r { 0%,100% { transform: rotate(2deg) translateY(-2px); } 50% { transform: rotate(-1deg) translateY(0); } }
+@keyframes vs-pulse { 0%,100% { transform: rotate(-8deg) scale(1); } 50% { transform: rotate(-8deg) scale(1.12); } }
+
+/* Character cards. */
+.fighters {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+  margin: 10px 0 8px;
+}
+
+button.fighter {
+  --c: var(--eddie);
+  --cd: var(--eddie-dark);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  padding: 8px 6px 0;
+  background:
+    radial-gradient(ellipse at 50% 38%, color-mix(in srgb, var(--c) 30%, transparent) 0%, transparent 62%),
+    #1c120e;
+  border: 3px solid var(--ink);
+  outline: 2px solid var(--cd);
+  outline-offset: -5px;
+  box-shadow: 0 5px 0 #0c0604;
+  overflow: hidden;
+  transition: transform 140ms ease, box-shadow 140ms ease;
+}
+button.fighter[data-kind="richie"] { --c: var(--richie); --cd: var(--richie-dark); }
+button.fighter:hover, button.fighter:focus-visible {
+  background:
+    radial-gradient(ellipse at 50% 38%, color-mix(in srgb, var(--c) 48%, transparent) 0%, transparent 66%),
+    #24170f;
+  outline: 2px solid var(--c);
+  outline-offset: -5px;
+  transform: translateY(-3px);
+  box-shadow: 0 8px 0 #0c0604;
+}
+button.fighter:active { transform: translateY(2px); box-shadow: 0 2px 0 #0c0604; }
+
+.fighter canvas {
+  width: 96px;
+  height: 120px;
+  image-rendering: pixelated;
+  image-rendering: crisp-edges;
+}
+.f-name {
+  font-size: clamp(10px, 3.4vw, 13px);
+  color: var(--c);
+  text-shadow: 2px 2px 0 var(--ink);
+}
+.f-stats { display: flex; flex-direction: column; gap: 3px; width: 100%; padding: 0 4px; }
+.stat {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 4px;
+  font-family: "Segoe UI", system-ui, sans-serif;
+  font-size: 11px;
+  color: #d8c4a4;
+}
+.stat i { font-style: normal; }
+.pips {
+  --n: 3;
+  width: 55px;
+  height: 7px;
+  background:
+    repeating-linear-gradient(90deg, var(--c) 0 9px, transparent 9px 11px) left / calc(var(--n) * 11px) 100% no-repeat,
+    repeating-linear-gradient(90deg, #4a3a30 0 9px, transparent 9px 11px);
+}
+.pips.p2 { --n: 2; } .pips.p3 { --n: 3; } .pips.p4 { --n: 4; } .pips.p5 { --n: 5; }
+.f-move {
+  font-family: "Segoe UI", system-ui, sans-serif;
+  font-size: 11px;
+  color: #a89680;
+}
+.f-cta {
+  display: block;
+  width: calc(100% + 12px);
+  margin-top: 4px;
+  padding: 8px 4px 7px;
+  background: var(--c);
+  color: var(--ink);
+  font-size: clamp(7px, 2.4vw, 9px);
+  border-top: 3px solid var(--ink);
+}
+
+button.two-p {
+  background: #3a2a22;
+  box-shadow: 0 4px 0 #0c0604;
+}
+
+details.help {
+  margin: 10px 0 8px;
+  padding: 0;
+  border-top: 1px solid #6a5040;
+  text-align: left;
+}
+details.help summary {
+  cursor: pointer;
+  padding: 8px 2px;
+  font-family: "Press Start 2P", monospace;
+  font-size: 9px;
+  color: #ffe08a;
+  list-style: none;
+}
+details.help summary::-webkit-details-marker { display: none; }
+details.help summary::before { content: "+ "; color: #d8b878; }
+details.help[open] summary::before { content: "– "; }
+
+/* Pause button over the game picture. */
+.hud-btn {
+  position: absolute;
+  right: 6px;
+  bottom: 6px;
+  z-index: 5;
+  width: 34px;
+  height: 34px;
+  min-height: 0;
+  padding: 0;
+  display: none;
+  font-size: 10px;
+  background: rgba(26,14,10,0.72);
+  border: 2px solid #e8d2a0;
+  color: #ffe08a;
+}
+body.playing .hud-btn { display: block; }
+
+/* Results screen. */
+.win-panel #win-portrait {
+  display: block;
+  margin: -4px auto 0;
+  width: 120px;
+  height: 126px;
+  image-rendering: pixelated;
+  image-rendering: crisp-edges;
+}
+.win-panel[data-winner="eddie"] h1 { color: var(--eddie); text-shadow: 2px 2px 0 var(--eddie-dark), 4px 4px 0 var(--ink); }
+.win-panel[data-winner="richie"] h1 { color: var(--richie); text-shadow: 2px 2px 0 var(--richie-dark), 4px 4px 0 var(--ink); }
+.win-panel[data-winner="draw"] #win-portrait { display: none; }
+.win-panel h1 { font-size: clamp(14px, 5vw, 22px); animation: wobble-l 2.2s ease-in-out infinite; }
+.score {
+  margin: 0 0 8px;
+  font-family: "Press Start 2P", monospace;
+  font-size: 10px;
+  color: #ffe08a;
+}
+.win-stats {
+  display: grid;
+  gap: 4px;
+  margin: 4px 0 6px;
+  text-align: left;
+}
+.win-stats .ws {
+  margin: 0;
+  padding: 5px 8px;
+  background: rgba(0,0,0,0.25);
+  border-left: 4px solid var(--eddie);
+  font-size: 12px;
+}
+.win-stats .ws.richie { border-left-color: var(--richie); }
+.win-stats .ws > span:first-child {
+  display: inline-block;
+  min-width: 64px;
+  font-family: "Press Start 2P", monospace;
+  font-size: 8px;
+  color: #d8c4a4;
+}
+.win-stats b { color: #fff; }
+
+/* Chunkier menu buttons. */
+.choices button, button.two-p {
+  box-shadow: 0 4px 0 #0c0604;
+  transition: transform 100ms ease, box-shadow 100ms ease;
+}
+.choices button:active, button.two-p:active { transform: translateY(3px); box-shadow: 0 1px 0 #0c0604; }
+
+/* Phone controls: colour-coded action buttons that press in. */
+.dpad button {
+  border-radius: 8px;
+  box-shadow: 0 3px 0 #0c0604;
+}
+.actions button {
+  box-shadow: 0 4px 0 #0c0604;
+  border-color: var(--ink);
+}
+.actions [data-touch="attack"] { background: var(--eddie); color: var(--ink); }
+.actions [data-touch="pickup"] { background: #6a4a3a; color: var(--cream); }
+#touch.as-richie .actions [data-touch="attack"] { background: var(--richie); }
+.dpad button:active, .actions button:active { transform: translateY(3px); box-shadow: 0 1px 0 #0c0604; }
+
+@media (max-width: 420px) {
+  .panel-inner { padding: 10px 8px 8px; }
+  .fighters { gap: 6px; }
+  .fighter canvas { width: 80px; height: 100px; }
+  .pips { width: 44px; background-size: calc(var(--n) * 9px) 100%, auto; background-image: repeating-linear-gradient(90deg, var(--c) 0 7px, transparent 7px 9px), repeating-linear-gradient(90deg, #4a3a30 0 7px, transparent 7px 9px); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .logo-e, .logo-r, .logo-vs, .win-panel h1, .panel-inner { animation: none; }
+}
+
+/* Pause button: small in the corner on a computer; on a phone it sits just
+   under the picture so it never covers the fight. */
+.hud-btn { width: 28px; height: 28px; font-size: 8px; opacity: 0.8; }
+.hud-btn:hover, .hud-btn:focus-visible { opacity: 1; }
+body.has-touch .hud-btn {
+  width: 40px;
+  height: 32px;
+  right: 2px;
+  bottom: -40px;
+  opacity: 1;
+}

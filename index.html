@@ -12,21 +12,52 @@
   <div id="app">
     <div id="stage">
       <canvas id="game" width="320" height="224" aria-label="Eddie versus Richie game"></canvas>
+      <button type="button" id="pause-btn" class="hud-btn" data-action="pause" aria-label="Pause">II</button>
     </div>
 
-      <div id="title-screen" class="panel" role="dialog" aria-labelledby="game-title">
+      <div id="title-screen" class="panel title-panel" role="dialog" aria-labelledby="game-title">
         <div class="panel-inner">
-          <h1 id="game-title">EDDIE vs RICHIE</h1>
+          <p class="kicker">Round one &middot; The Flat</p>
+          <h1 id="game-title" class="logo">
+            <span class="logo-e">EDDIE</span>
+            <span class="logo-vs">VS</span>
+            <span class="logo-r">RICHIE</span>
+          </h1>
           <p class="tag">A scrap in the flat. Hit each other with whatever you can grab.</p>
-          <div class="choices">
-            <button type="button" data-mode="1p-eddie">1 Player — play as Eddie</button>
-            <button type="button" data-mode="1p-richie">1 Player — play as Richie</button>
-            <button type="button" data-mode="2p">2 Players — one keyboard</button>
+
+          <div class="fighters">
+            <button type="button" class="fighter" data-kind="eddie" data-mode="1p-eddie">
+              <canvas data-preview="eddie" width="64" height="80" aria-hidden="true"></canvas>
+              <span class="f-name">EDDIE</span>
+              <span class="f-stats" aria-hidden="true">
+                <span class="stat"><i>Tough</i><b class="pips p5"></b></span>
+                <span class="stat"><i>Speed</i><b class="pips p2"></b></span>
+                <span class="stat"><i>Hits</i><b class="pips p4"></b></span>
+              </span>
+              <span class="f-move">Cricket bat</span>
+              <span class="f-cta">Play as Eddie</span>
+            </button>
+            <button type="button" class="fighter" data-kind="richie" data-mode="1p-richie">
+              <canvas data-preview="richie" width="64" height="80" aria-hidden="true"></canvas>
+              <span class="f-name">RICHIE</span>
+              <span class="f-stats" aria-hidden="true">
+                <span class="stat"><i>Tough</i><b class="pips p3"></b></span>
+                <span class="stat"><i>Speed</i><b class="pips p5"></b></span>
+                <span class="stat"><i>Hits</i><b class="pips p4"></b></span>
+              </span>
+              <span class="f-move">Throws anything</span>
+              <span class="f-cta">Play as Richie</span>
+            </button>
           </div>
-          <div class="help">
-            <h2>How to play</h2>
+
+          <button type="button" class="two-p" data-mode="2p">2 Players &mdash; one keyboard</button>
+
+          <details class="help">
+            <summary>How to play</summary>
+            <div class="help-body" hidden>
+            <p>First to win 2 rounds takes the match.</p>
             <p>Eddie is slower and tougher. He swings a cricket bat, and can grab and throw things too (but not as hard).</p>
-            <p>Richie is quicker but can’t take as many hits. He picks things up and throws them.</p>
+            <p>Richie is quicker but can&rsquo;t take as many hits. He picks things up and throws them.</p>
             <div class="cols">
               <div>
                 <h3>Eddie (P1)</h3>
@@ -37,8 +68,10 @@
                 <p>Move: arrow keys<br>Throw: K<br>Pick up / drop: L</p>
               </div>
             </div>
-            <p class="note">On a phone, use the pad and buttons (1 player). P or Esc pauses. M turns the beeps off. Space starts a 1-player game as Eddie.</p>
-          </div>
+            <p class="note">In 1 player you can use either set of keys. On a phone, use the pad and buttons. P or Esc pauses. M turns the beeps off. Space starts a 1-player game as Eddie.</p>
+            </div>
+          </details>
+
           <button type="button" class="secondary" data-action="mute" data-mute-label>Sound: on</button>
         </div>
       </div>
@@ -55,10 +88,16 @@
         </div>
       </div>
 
-      <div id="win-screen" class="panel" hidden>
+      <div id="win-screen" class="panel win-panel" hidden>
         <div class="panel-inner">
+          <canvas id="win-portrait" width="80" height="84" aria-hidden="true"></canvas>
           <h1 id="win-title">SOMEONE WINS</h1>
           <p id="win-blurb" class="tag"></p>
+          <p id="win-score" class="score"></p>
+          <div class="win-stats">
+            <p class="ws eddie"><span>EDDIE</span> <span id="stats-eddie"></span></p>
+            <p class="ws richie"><span>RICHIE</span> <span id="stats-richie"></span></p>
+          </div>
           <div class="choices">
             <button type="button" data-action="again">Play again</button>
             <button type="button" class="secondary" data-action="quit">Back to title</button>
@@ -90,10 +129,12 @@
   <script src="js/input.js"></script>
   <script src="js/levels.js"></script>
   <script src="js/level-flat.js"></script>
+  <script src="js/fx.js"></script>
   <script src="js/entities.js"></script>
   <script src="js/ai.js"></script>
   <script src="js/renderer.js"></script>
   <script src="js/game.js"></script>
+  <script src="js/ui.js"></script>
   <script src="js/main.js"></script>
 </body>
 </html>

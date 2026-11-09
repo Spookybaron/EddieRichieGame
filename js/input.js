@@ -5,6 +5,8 @@ ER.Input = {
   keys: {},
   p1: { x: 0, y: 0, attack: false, pickup: false },
   p2: { x: 0, y: 0, attack: false, pickup: false },
+  /* In a 1-player game the human can use either set of keys. */
+  solo: { x: 0, y: 0, attack: false, pickup: false },
   pausePressed: false,
   mutePressed: false,
   confirmPressed: false,
@@ -78,13 +80,19 @@ ER.Input = {
     this.p2.attack = this._edge(this._down("KeyK"), "_attackLatch2");
     this.p2.pickup = this._edge(this._down("KeyL"), "_pickLatch2");
 
+    this.solo.x = this.p1.x || this.p2.x;
+    this.solo.y = this.p1.y || this.p2.y;
+    this.solo.attack = this.p1.attack || this.p2.attack;
+    this.solo.pickup = this.p1.pickup || this.p2.pickup;
+
     this.pausePressed = this._edge(this._down("KeyP") || this._down("Escape"), "_pauseLatch");
     this.mutePressed = this._edge(this._down("KeyM"), "_muteLatch");
     this.confirmPressed = this._edge(this._down("Space") || this._down("Enter"), "_confirmLatch");
   },
 
   /* Snapshot for a human player. CPU ignores this and writes its own. */
-  forControl: function (control) {
+  forControl: function (control, solo) {
+    if (solo && control === "p1") return this.solo;
     if (control === "p1") return this.p1;
     if (control === "p2") return this.p2;
     return { x: 0, y: 0, attack: false, pickup: false };

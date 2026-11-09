@@ -4,6 +4,7 @@ window.ER = window.ER || {};
 ER.Audio = {
   ctx: null,
   muted: false,
+  quiet: false, /* true while the demo fight plays behind the title screen */
   unlocked: false,
 
   _ensure: function () {
@@ -32,7 +33,7 @@ ER.Audio = {
   },
 
   beep: function (freq, dur, type, vol, slide) {
-    if (this.muted) return;
+    if (this.muted || this.quiet) return;
     var ctx = this._ensure();
     if (!ctx) return;
     var t0 = ctx.currentTime;
@@ -60,6 +61,21 @@ ER.Audio = {
     this.beep(440, 0.12, "square", 0.07);
     setTimeout(function () { self.beep(554, 0.12, "square", 0.07); }, 110);
     setTimeout(function () { self.beep(659, 0.22, "square", 0.08); }, 220);
+  },
+  bell: function () {
+    var self = this;
+    this.beep(988, 0.25, "triangle", 0.07);
+    setTimeout(function () { self.beep(988, 0.35, "triangle", 0.06); }, 160);
+  },
+  fight: function () {
+    var self = this;
+    this.beep(392, 0.08, "square", 0.07);
+    setTimeout(function () { self.beep(784, 0.18, "square", 0.08, 880); }, 70);
+  },
+  ko: function () {
+    var self = this;
+    this.beep(220, 0.3, "sawtooth", 0.09, 55);
+    setTimeout(function () { self.beep(110, 0.45, "square", 0.07, 40); }, 120);
   },
   ui: function () { this.beep(660, 0.05, "square", 0.04); }
 };
