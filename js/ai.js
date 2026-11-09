@@ -3,9 +3,16 @@ window.ER = window.ER || {};
 
 ER.AI = {
   think: function (self, other, items) {
-    var cmd = { x: 0, y: 0, attack: false, pickup: false };
+    var cmd = { x: 0, y: 0, attack: false, pickup: false, jump: false };
     if (!self.alive || !other) return cmd;
     if (self.stun > 0) return cmd;
+
+    /* Sometimes hop over something thrown at us. */
+    var threat = ER.AI._incoming(self, items);
+    if (threat && !self.airborne()) {
+      if (threat.dodgeRoll === undefined) threat.dodgeRoll = Math.random() < 0.4;
+      if (threat.dodgeRoll) cmd.jump = true;
+    }
 
     var dx = other.x - self.x;
     var dy = other.y - self.y;
@@ -67,6 +74,20 @@ ER.AI = {
       }
     }
     return cmd;
+  },
+
+  /* A flying object heading our way, close enough that a jump now would clear it. */
+  _incoming: function (self, items) {
+    for (var i = 0; i < items.length; i++) {
+      var it = items[i];
+      if (it.state !== "fly" || it.thrower === self || it.hitUsed) continue;
+      var dx = self.x - it.x;
+      if (Math.abs(dx) < 18 || Math.abs(dx) > 64) continue;
+      if ((dx > 0) !== (it.vx > 0)) continue;
+      if (Math.abs(it.y - (self.y - 30)) > 30) continue;
+      return it;
+    }
+    return null;
   },
 
   _nearestGround: function (self, items) {

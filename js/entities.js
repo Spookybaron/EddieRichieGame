@@ -51,6 +51,20 @@ ER.Player.prototype.hop = function (power) {
   this.z = -0.01;
 };
 
+ER.Player.prototype.airborne = function () {
+  return this.z < -0.5 || this.vz < 0;
+};
+
+/* A real jump: lifts the hurtbox, so it can dodge low throws and clear the chair. */
+ER.Player.prototype.jump = function () {
+  if (!this.alive || this.stun > 0 || this.airborne()) return false;
+  this.vz = -ER.JUMP.power;
+  this.z = -0.01;
+  if (ER.FX) ER.FX.dust(this.x, this.y, 4, 0);
+  if (ER.Audio.jump) ER.Audio.jump();
+  return true;
+};
+
 ER.Player.prototype._visualTick = function () {
   if (this.turnT > 0) this.turnT -= 1;
   if (this.landT > 0) this.landT -= 1;
@@ -59,7 +73,7 @@ ER.Player.prototype._visualTick = function () {
     this.z += this.vz;
     if (this.z >= 0) {
       this.z = 0;
-      if (this.vz > 2.2) {
+      if (this.vz > 2.2 && !this.alive) {
         /* Bounce once on a hard landing. */
         this.vz = -this.vz * 0.32;
         this.z = -0.01;
@@ -68,6 +82,7 @@ ER.Player.prototype._visualTick = function () {
         this.vz = 0;
       }
       this.landT = 7;
+      if (this.alive && ER.FX) ER.FX.dust(this.x, this.y, 3, 0);
     }
   }
   if (!this.alive) this.koT += 1;
@@ -86,7 +101,7 @@ ER.Player.prototype._visualTick = function () {
 };
 
 ER.Player.prototype.hurtbox = function () {
-  return { x: this.x - 11, y: this.y - 52, w: 22, h: 50 };
+  return { x: this.x - 11, y: this.y - 52 + this.z, w: 22, h: 50 };
 };
 
 ER.Player.prototype.takeDamage = function (amount, fromX) {
@@ -112,7 +127,7 @@ ER.Player.prototype.takeDamage = function (amount, fromX) {
 };
 
 ER.Player.prototype.tryPickup = function (items) {
-  if (this.holding || this.stun > 0 || !this.alive) return false;
+  if (this.holding || this.stun > 0 || !this.alive || this.airborne()) return false;
   var best = null;
   var bestD = 34;
   for (var i = 0; i < items.length; i++) {
@@ -175,7 +190,7 @@ ER.Player.prototype.releaseThrow = function (aimY) {
   it.holder = null;
   /* Spawn the object fully clear of the thrower's own body (hurtbox half-width 11). */
   it.x = this.x + this.facing * (11 + spec.radius + 4);
-  it.y = this.y - 30;
+  it.y = this.y - 30 + this.z;
   /* Never let the thrower's own backwards drift push it back into them. */
   var drift = this.vx * this.facing > 0 ? this.vx * 0.25 : 0;
   it.vx = this.facing * spec.speed * this.throwPower + drift;
@@ -238,6 +253,7 @@ ER.Player.prototype.update = function (cmd, items, level, opponent) {
       if (this.walkPhase % 16 === 0 && ER.FX) ER.FX.dust(this.x - this.facing * 5, this.y, 1, -this.facing);
     }
     if (cmd.face) this.facing = cmd.face;
+    if (cmd.jump) this.jump();
     if (cmd.attack) {
       /* Eddie: F always swings the bat. Richie: K throws (or grabs if empty-handed). */
       if (this.kind === "eddie") this.startSwing();
@@ -273,7 +289,7 @@ ER.Player.prototype._tryBatHit = function (opponent) {
   if (!opponent || !opponent.alive) return;
   var s = ER.EDDIE_SWING;
   var hx = this.facing > 0 ? this.x + 8 : this.x - 8 - s.range;
-  var hy = this.y - 50;
+  var hy = this.y - 50 + this.z;
   var box = opponent.hurtbox();
   if (ER.aabbHit(hx, hy, s.range, 40, box.x, box.y, box.w, box.h)) {
     if (Math.abs(opponent.y - this.y) < 22 && opponent.takeDamage(s.damage, this.x)) {
@@ -288,6 +304,7 @@ ER.Player.prototype._resolveChair = function (items) {
   for (var i = 0; i < items.length; i++) {
     var it = items[i];
     if (it.type !== "chair" || it.state !== "ground") continue;
+    if (this.z < -12) continue; /* high enough to hop over it */
     var hw = 16, hh = 10;
     if (Math.abs(this.x - it.x) < hw + 10 && Math.abs(this.y - it.y) < hh + 6) {
       if (this.x < it.x) this.x = it.x - hw - 10;
@@ -300,11 +317,16 @@ ER.Player.prototype.animName = function () {
   if (!this.alive) return "lose";
   if (ER.Game && (ER.Game.winner === this.kind || ER.Game.koWinner === this.kind)) return "win";
   if (this.stun > 0) return "hurt";
-  if (this.action && this.action.type === "swing") return "swing";
+  if (this.action && this.action.type === "swing") {
+    /* Bat cocked back for the wind-up, then the arm comes through
+       (the bat itself is drawn by the renderer so it can sweep round). */
+    return this.action.t < ER.EDDIE_SWING.windup ? "swing" : "jab";
+  }
   if (this.action && this.action.type === "throw") {
     if (this.kind === "eddie") return this.action.released ? "jab" : "reach";
     return this.action.released ? "throw3" : "throw2";
   }
+  if (this.airborne()) return this.vz < 0 ? "walk3" : "walk1";
   if (Math.abs(this.vx) + Math.abs(this.vy) > 0.35) {
     var frame = Math.floor(this.walkPhase / 8) % 4;
     return "walk" + frame;
