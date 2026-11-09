@@ -3,21 +3,25 @@ window.ER = window.ER || {};
 
 ER.Input = {
   keys: {},
-  p1: { x: 0, y: 0, attack: false, pickup: false },
-  p2: { x: 0, y: 0, attack: false, pickup: false },
+  p1: { x: 0, y: 0, attack: false, pickup: false, jump: false },
+  p2: { x: 0, y: 0, attack: false, pickup: false, jump: false },
   /* In a 1-player game the human can use either set of keys. */
-  solo: { x: 0, y: 0, attack: false, pickup: false },
+  solo: { x: 0, y: 0, attack: false, pickup: false, jump: false },
   pausePressed: false,
   mutePressed: false,
+  musicPressed: false,
   confirmPressed: false,
   _attackLatch1: false,
   _attackLatch2: false,
   _pickLatch1: false,
   _pickLatch2: false,
+  _jumpLatch1: false,
+  _jumpLatch2: false,
   _pauseLatch: false,
   _muteLatch: false,
+  _musicLatch: false,
   _confirmLatch: false,
-  touch: { up: false, down: false, left: false, right: false, attack: false, pickup: false },
+  touch: { up: false, down: false, left: false, right: false, attack: false, pickup: false, jump: false },
 
   init: function () {
     var self = this;
@@ -70,6 +74,7 @@ ER.Input = {
     this.p1.y = (p1Down ? 1 : 0) - (p1Up ? 1 : 0);
     this.p1.attack = this._edge(this._down("KeyF") || t.attack, "_attackLatch1");
     this.p1.pickup = this._edge(this._down("KeyG") || t.pickup, "_pickLatch1");
+    this.p1.jump = this._edge(this._down("Space") || t.jump, "_jumpLatch1");
 
     var p2Left = this._down("ArrowLeft");
     var p2Right = this._down("ArrowRight");
@@ -79,14 +84,17 @@ ER.Input = {
     this.p2.y = (p2Down ? 1 : 0) - (p2Up ? 1 : 0);
     this.p2.attack = this._edge(this._down("KeyK"), "_attackLatch2");
     this.p2.pickup = this._edge(this._down("KeyL"), "_pickLatch2");
+    this.p2.jump = this._edge(this._down("Enter") || this._down("NumpadEnter") || this._down("ShiftRight"), "_jumpLatch2");
 
     this.solo.x = this.p1.x || this.p2.x;
     this.solo.y = this.p1.y || this.p2.y;
     this.solo.attack = this.p1.attack || this.p2.attack;
     this.solo.pickup = this.p1.pickup || this.p2.pickup;
+    this.solo.jump = this.p1.jump || this.p2.jump;
 
     this.pausePressed = this._edge(this._down("KeyP") || this._down("Escape"), "_pauseLatch");
     this.mutePressed = this._edge(this._down("KeyM"), "_muteLatch");
+    this.musicPressed = this._edge(this._down("KeyN"), "_musicLatch");
     this.confirmPressed = this._edge(this._down("Space") || this._down("Enter"), "_confirmLatch");
   },
 
@@ -95,6 +103,6 @@ ER.Input = {
     if (solo && control === "p1") return this.solo;
     if (control === "p1") return this.p1;
     if (control === "p2") return this.p2;
-    return { x: 0, y: 0, attack: false, pickup: false };
+    return { x: 0, y: 0, attack: false, pickup: false, jump: false };
   }
 };

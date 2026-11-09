@@ -523,3 +523,11 @@ body.has-touch .hud-btn {
   bottom: -40px;
   opacity: 1;
 }
+
+/* Jump sits beside the main action button on phones. */
+.actions .action-row { display: flex; gap: 8px; }
+.actions .action-row button { flex: 1 1 0; }
+.actions [data-touch="jump"] { background: #4a7ac8; color: #fff; }
+.actions { min-width: 150px; }
+
+.toggles { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; }

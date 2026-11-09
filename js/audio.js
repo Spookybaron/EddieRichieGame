@@ -1,4 +1,4 @@
-/* Tiny generated beeps. No recorded or copyrighted audio. */
+/* Tiny generated beeps for the sound effects. The background music is in music.js. */
 window.ER = window.ER || {};
 
 ER.Audio = {
@@ -20,10 +20,12 @@ ER.Audio = {
     if (!ctx) return;
     if (ctx.state === "suspended") ctx.resume();
     this.unlocked = true;
+    if (ER.Music) ER.Music.start();
   },
 
   setMuted: function (m) {
     this.muted = !!m;
+    if (ER.Music) ER.Music.syncVolume();
     try { localStorage.setItem("er-mute", this.muted ? "1" : "0"); } catch (e) {}
   },
 
@@ -62,6 +64,7 @@ ER.Audio = {
     setTimeout(function () { self.beep(554, 0.12, "square", 0.07); }, 110);
     setTimeout(function () { self.beep(659, 0.22, "square", 0.08); }, 220);
   },
+  jump: function () { this.beep(260, 0.12, "square", 0.05, 620); },
   bell: function () {
     var self = this;
     this.beep(988, 0.25, "triangle", 0.07);

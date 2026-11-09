@@ -221,6 +221,46 @@ def main():
             raise RuntimeError(f"arrow keys did not move Richie in 1-player mode: {x0} -> {x1}")
         results["richieArrows"] = {"moved": round(x1 - x0, 1)}
 
+        # --- Jumping: Space jumps, a jump dodges a low throw, clears the chair -
+        page.evaluate("() => { ER.Test.start('1p-eddie'); ER.Game.richie.control = 'none'; }")
+        page.keyboard.down("Space"); page.wait_for_timeout(120); page.keyboard.up("Space")
+        z = page.evaluate("() => ER.Game.eddie.z")
+        if z > -5:
+            raise RuntimeError(f"Space did not make Eddie jump: z={z}")
+        jump = page.evaluate(
+            """() => {
+              const G = ER.Game;
+              function shot(doJump) {
+                ER.Test.start('2p');
+                const e = G.eddie, r = G.richie;
+                e.x = 300; e.y = 205; r.x = 700; r.y = 205;
+                const hp0 = e.hp;
+                if (doJump) { e.jump(); for (let i = 0; i < 9; i++) G.update(); }
+                const it = G.items.find(i => i.type === 'remote');
+                it.state = 'fly'; it.thrower = r; it.hitUsed = false;
+                it.x = e.x + 30; it.y = e.y - 24; it.vx = -4; it.vy = 0; it.spin = 0;
+                for (let i = 0; i < 40; i++) G.update();
+                return hp0 - e.hp;
+              }
+              const lostStanding = shot(false), lostJumping = shot(true);
+              ER.Test.start('2p');
+              const e = G.eddie, ch = G.items.find(i => i.type === 'chair');
+              G.richie.x = 900;
+              ch.state = 'ground'; ch.x = 330; ch.y = 205; e.x = 300; e.y = 205; e.facing = 1;
+              const cmd = { x: 1, y: 0, attack: false, pickup: false, jump: false };
+              let blockedX = 0;
+              for (let i = 0; i < 40; i++) { e.update(cmd, G.items, G.level, G.richie); blockedX = e.x; }
+              e.jump();
+              for (let i = 0; i < 40; i++) e.update(cmd, G.items, G.level, G.richie);
+              return { lostStanding, lostJumping, blockedX: Math.round(blockedX), afterJumpX: Math.round(e.x), chairX: ch.x };
+            }"""
+        )
+        if jump["lostStanding"] <= 0 or jump["lostJumping"] != 0:
+            raise RuntimeError(f"jumping should dodge a low throw: {jump}")
+        if not (jump["blockedX"] < jump["chairX"] < jump["afterJumpX"]):
+            raise RuntimeError(f"could not jump over the chair: {jump}")
+        results["jump"] = {"spaceJumps": True, **jump}
+
         # --- Best of three: a knockout starts the next round ----------------
         rounds = page.evaluate(
             """() => {

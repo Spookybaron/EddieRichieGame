@@ -130,7 +130,13 @@ ER.Renderer = {
       return { sx: sx, sy: sy, rot: rot, oy: oy };
     }
 
-    if (sp > 0.35 && pl.stun <= 0) {
+    var air = pl.airborne();
+    if (air) {
+      /* Stretch on the way up, tuck at the top. */
+      sy *= pl.vz < -1 ? 1.07 : pl.vz < 1 ? 0.97 : 1.02;
+      sx *= pl.vz < -1 ? 0.94 : pl.vz < 1 ? 1.03 : 0.99;
+      rot += ER.clamp(pl.vx / pl.speed, -1, 1) * 0.1;
+    } else if (sp > 0.35 && pl.stun <= 0) {
       var ph = Math.abs(Math.sin(pl.walkPhase / 16 * Math.PI));
       oy -= ph * 2.4 * m;
       sy *= 1 - 0.045 * m * (1 - ph);
@@ -213,9 +219,9 @@ ER.Renderer = {
       ER.Sprites.draw(ctx, pl.kind, name, 0, 0, flip, 1, ER.Sprites.tinted(pl.kind, "#ff3b3b"));
     }
     ctx.globalAlpha = 1;
+    /* Drawn inside the body's transform so the bat leans and squashes with him. */
+    this._drawBatSwing(ctx, pl);
     ctx.restore();
-
-    this._drawSwingArc(ctx, pl);
 
     if (pl.holding) {
       var bob = Math.sin((state.t || 0) / 10) * 0.8;
@@ -237,27 +243,82 @@ ER.Renderer = {
     }
   },
 
-  /* A white smear in front of Eddie while the bat is live. */
-  _drawSwingArc: function (ctx, pl) {
+  /* A little pixel cricket bat (same colours as the one in Eddie's wind-up
+     frame), built once so it can be rotated without going blurry. */
+  _batImage: function () {
+    if (this._bat) return this._bat;
+    var c = document.createElement("canvas");
+    c.width = 34;
+    c.height = 7;
+    var g = c.getContext("2d");
+    var ink = "#060002";
+    /* Handle (grip) */
+    g.fillStyle = ink;
+    g.fillRect(0, 2, 10, 3);
+    g.fillStyle = "#5b1538";
+    g.fillRect(1, 3, 8, 1);
+    /* Blade */
+    g.fillStyle = ink;
+    g.fillRect(9, 0, 25, 7);
+    g.fillStyle = "#fcc375";
+    g.fillRect(10, 1, 23, 5);
+    g.fillStyle = "#ac7b5a";
+    g.fillRect(10, 5, 23, 1);
+    g.fillStyle = "#fff0c8";
+    g.fillRect(11, 1, 20, 1);
+    g.fillStyle = ink;
+    g.fillRect(33, 0, 1, 1);
+    g.fillRect(33, 6, 1, 1);
+    this._bat = c;
+    return c;
+  },
+
+  /* The bat sweeps from over Eddie's head, down through the hit, and
+     follows through low. The swish smear shows while it can connect. */
+  _drawBatSwing: function (ctx, pl) {
     var a = pl.action;
     if (!a || a.type !== "swing") return;
     var S = ER.EDDIE_SWING;
-    var k = (a.t - S.windup) / S.active;
-    if (k < 0 || k > 1.3) return;
-    var f = pl.facing;
-    var cx = pl.x + f * 4;
-    var cy = pl.y - 36;
-    var start = -2.1, end = -2.1 + Math.min(1, k) * 2.6;
+    var t = a.t - S.windup;
+    if (t < 0) return; /* wind-up: the bat is already in the sprite, cocked back */
+    var START = -1.95, HIT = 0.75, REST = 1.05;
+    var ang;
+    if (t < S.active) {
+      var k = t / S.active;
+      var e = 1 - Math.pow(1 - k, 3); /* fast, then slows into the follow-through */
+      ang = START + (HIT - START) * e;
+    } else {
+      var kr = Math.min(1, (t - S.active) / S.recover);
+      ang = HIT + (REST - HIT) * kr;
+    }
+    var fade = t < S.active ? 1 : Math.max(0, 1 - (t - S.active) / 8);
     ctx.save();
-    ctx.translate(cx, cy);
-    if (f < 0) ctx.scale(-1, 1);
-    ctx.lineCap = "round";
-    for (var i = 0; i < 3; i++) {
-      ctx.strokeStyle = i === 0 ? "rgba(255,248,220," + (0.75 * (1.3 - k)).toFixed(3) + ")" : "rgba(255,215,90," + (0.35 * (1.3 - k)).toFixed(3) + ")";
-      ctx.lineWidth = i === 0 ? 3 : 1;
+    if (pl.facing < 0) ctx.scale(-1, 1);
+    ctx.translate(20, -35); /* Eddie's hand on the arm-out frame */
+
+    if (fade > 0) {
+      ctx.lineCap = "round";
+      var from = Math.max(START, ang - 1.5);
+      ctx.strokeStyle = "rgba(255,248,220," + (0.8 * fade).toFixed(3) + ")";
+      ctx.lineWidth = 5;
       ctx.beginPath();
-      ctx.arc(0, 0, 24 + i * 4, Math.max(start, end - 1.3), end);
+      ctx.arc(0, 0, 26, from, ang);
       ctx.stroke();
+      ctx.strokeStyle = "rgba(255,215,90," + (0.45 * fade).toFixed(3) + ")";
+      ctx.lineWidth = 2;
+      ctx.beginPath();
+      ctx.arc(0, 0, 32, from + 0.25, ang);
+      ctx.stroke();
+    }
+
+    var img = this._batImage();
+    ctx.rotate(ang);
+    ctx.imageSmoothingEnabled = false;
+    if (pl.flash > 6) {
+      ctx.fillStyle = "#ffffff";
+      ctx.fillRect(-3, -3, 34, 7);
+    } else {
+      ctx.drawImage(img, -3, -3);
     }
     ctx.restore();
   },

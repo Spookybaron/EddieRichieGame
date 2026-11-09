@@ -28,3 +28,6 @@ ER.ITEM_SPEC = {
 
 ER.EDDIE_SWING = { windup: 8, active: 12, recover: 20, damage: 24, range: 34, cooldown: 8 };
 ER.RICHIE_THROW = { windup: 9, recover: 14, cooldown: 6 };
+
+/* Jumping: launch speed and gravity (world pixels per frame). About 29px high. */
+ER.JUMP = { power: 3.7, gravity: 0.22 };

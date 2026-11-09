@@ -31,7 +31,15 @@ ER.Game = {
     this._spawnAttract();
     this._bindUi();
     ER.Audio.loadMute();
+    ER.Music.load();
     this._syncMuteButton();
+    /* Background music pauses when the tab is hidden. */
+    document.addEventListener("visibilitychange", function () {
+      var ctx = ER.Audio.ctx;
+      if (!ctx) return;
+      if (document.hidden) ctx.suspend();
+      else if (ER.Audio.unlocked) ctx.resume();
+    });
   },
 
   _freshStats: function () {
@@ -136,9 +144,17 @@ ER.Game = {
     if (!ER.Audio.muted) ER.Audio.ui();
   },
 
+  toggleMusic: function () {
+    ER.Music.setEnabled(!ER.Music.enabled);
+    this._syncMuteButton();
+  },
+
   _syncMuteButton: function () {
     document.querySelectorAll("[data-mute-label]").forEach(function (el) {
       el.textContent = ER.Audio.muted ? "Sound: off" : "Sound: on";
+    });
+    document.querySelectorAll("[data-music-label]").forEach(function (el) {
+      el.textContent = ER.Music.enabled ? "Music: on" : "Music: off";
     });
   },
 
@@ -188,6 +204,11 @@ ER.Game = {
     document.querySelectorAll("[data-action='mute']").forEach(function (btn) {
       btn.addEventListener("click", function () { ER.Audio.unlock(); self.toggleMute(); });
     });
+    document.querySelectorAll("[data-action='music']").forEach(function (btn) {
+      btn.addEventListener("click", function () { ER.Audio.unlock(); self.toggleMusic(); });
+    });
+    /* Any first tap or click anywhere is enough to let the music start. */
+    document.addEventListener("pointerdown", function () { ER.Audio.unlock(); }, { once: true });
   },
 
   onHit: function (victim, amount, fromX, source, weapon) {
@@ -219,6 +240,7 @@ ER.Game = {
     ER.Input.poll();
     ER.Audio.quiet = this.screen === "title";
     if (ER.Input.mutePressed) this.toggleMute();
+    if (ER.Input.musicPressed) this.toggleMusic();
 
     if (this.screen === "title") {
       this._updateAttract();

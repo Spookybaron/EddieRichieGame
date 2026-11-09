@@ -58,21 +58,25 @@
             <p>First to win 2 rounds takes the match.</p>
             <p>Eddie is slower and tougher. He swings a cricket bat, and can grab and throw things too (but not as hard).</p>
             <p>Richie is quicker but can&rsquo;t take as many hits. He picks things up and throws them.</p>
+            <p>Jump over low throws, or hop over the chair.</p>
             <div class="cols">
               <div>
                 <h3>Eddie (P1)</h3>
-                <p>Move: W A S D<br>Swing bat: F<br>Grab / throw: G</p>
+                <p>Move: W A S D<br>Jump: Space<br>Swing bat: F<br>Grab / throw: G</p>
               </div>
               <div>
                 <h3>Richie (P2)</h3>
-                <p>Move: arrow keys<br>Throw: K<br>Pick up / drop: L</p>
+                <p>Move: arrow keys<br>Jump: Enter<br>Throw: K<br>Pick up / drop: L</p>
               </div>
             </div>
-            <p class="note">In 1 player you can use either set of keys. On a phone, use the pad and buttons. P or Esc pauses. M turns the beeps off. Space starts a 1-player game as Eddie.</p>
+            <p class="note">In 1 player you can use either set of keys. On a phone, use the pad and buttons. P or Esc pauses. M turns all sound off, N just the music. Space starts a 1-player game as Eddie.</p>
             </div>
           </details>
 
-          <button type="button" class="secondary" data-action="mute" data-mute-label>Sound: on</button>
+          <div class="toggles">
+            <button type="button" class="secondary" data-action="mute" data-mute-label>Sound: on</button>
+            <button type="button" class="secondary" data-action="music" data-music-label>Music: on</button>
+          </div>
         </div>
       </div>
 
@@ -83,7 +87,10 @@
           <div class="choices">
             <button type="button" data-action="resume">Resume</button>
             <button type="button" class="secondary" data-action="quit">Back to title</button>
-            <button type="button" class="secondary" data-action="mute" data-mute-label>Sound: on</button>
+            <div class="toggles">
+              <button type="button" class="secondary" data-action="mute" data-mute-label>Sound: on</button>
+              <button type="button" class="secondary" data-action="music" data-music-label>Music: on</button>
+            </div>
           </div>
         </div>
       </div>
@@ -117,7 +124,10 @@
       </div>
       <div class="actions">
         <button type="button" data-touch="pickup"><span class="label">PICK UP</span></button>
-        <button type="button" data-touch="attack"><span class="label">BAT</span></button>
+        <div class="action-row">
+          <button type="button" data-touch="jump"><span class="label">JUMP</span></button>
+          <button type="button" data-touch="attack"><span class="label">BAT</span></button>
+        </div>
       </div>
     </div>
   </div>
@@ -125,6 +135,8 @@
   <script src="js/sprite-data.js"></script>
   <script src="js/config.js"></script>
   <script src="js/audio.js"></script>
+  <script src="js/music-data.js"></script>
+  <script src="js/music.js"></script>
   <script src="js/sprites.js"></script>
   <script src="js/input.js"></script>
   <script src="js/levels.js"></script>
