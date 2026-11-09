@@ -2,11 +2,11 @@
 
 A small 2D scrap set in Eddie and Richie’s flat. Round one is just the flat. Later we can add other places from the series, each with its own mini-game.
 
-This is a private project. Please don’t publish it or put it on GitHub Pages unless you’ve said that’s OK.
+You can play it online at **https://spookybaron.github.io/EddieRichieGame/**. The site updates on its own whenever something is merged into `main`.
 
 ## How to play
 
-You don’t need to install anything.
+You don’t need to install anything. Open the link above, or play it from your own computer:
 
 1. Download this project (on GitHub: the green **Code** button, then **Download ZIP**).
 2. Unzip it.
