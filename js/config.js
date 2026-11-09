@@ -9,8 +9,9 @@ ER.FLOOR_TOP = 176;
 ER.FLOOR_BOTTOM = 214;
 
 ER.STATS = {
-  eddie:  { hp: 140, speed: 1.16, accel: 0.38, friction: 0.78, name: "EDDIE"  },
-  richie: { hp:  90, speed: 1.94, accel: 0.52, friction: 0.80, name: "RICHIE" }
+  /* throwPower / throwDamage: Eddie can throw too, but slower, shorter and softer. */
+  eddie:  { hp: 140, speed: 1.16, accel: 0.38, friction: 0.78, name: "EDDIE",  throwPower: 0.72, throwDamage: 0.75 },
+  richie: { hp:  90, speed: 1.94, accel: 0.52, friction: 0.80, name: "RICHIE", throwPower: 1.00, throwDamage: 1.00 }
 };
 
 ER.ITEM_SPEC = {

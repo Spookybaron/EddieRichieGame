@@ -30,6 +30,8 @@ ER.Player = function (kind, x, y, facing, control) {
   this.idleT = 0;
   this.flash = 0;
   this.alive = true;
+  this.throwPower = st.throwPower || 1;
+  this.throwDamage = st.throwDamage || 1;
 };
 
 ER.Player.prototype.hurtbox = function () {
@@ -52,7 +54,6 @@ ER.Player.prototype.takeDamage = function (amount, fromX) {
 };
 
 ER.Player.prototype.tryPickup = function (items) {
-  if (this.kind === "eddie") return false;
   if (this.holding || this.stun > 0 || !this.alive) return false;
   var best = null;
   var bestD = 34;
@@ -91,7 +92,7 @@ ER.Player.prototype.drop = function () {
 
 ER.Player.prototype.startSwing = function () {
   if (this.kind !== "eddie") return;
-  if (this.stun > 0 || this.cooldown > 0 || (this.action && this.action.type === "swing")) return;
+  if (this.stun > 0 || this.cooldown > 0 || this.action) return;
   var s = ER.EDDIE_SWING;
   this.action = { type: "swing", t: 0, dur: s.windup + s.active + s.recover, hit: false };
   this.cooldown = s.windup + s.active + s.recover + s.cooldown;
@@ -99,10 +100,13 @@ ER.Player.prototype.startSwing = function () {
 };
 
 ER.Player.prototype.startThrow = function () {
-  if (!this.holding || this.stun > 0 || this.cooldown > 0) return;
+  if (!this.holding || this.stun > 0 || this.cooldown > 0 || this.action) return false;
   var s = ER.RICHIE_THROW;
-  this.action = { type: "throw", t: 0, dur: s.windup + s.recover, released: false };
-  this.cooldown = s.windup + s.recover + s.cooldown;
+  /* Eddie winds up a little slower than Richie. */
+  var slow = this.kind === "eddie" ? 4 : 0;
+  this.action = { type: "throw", t: 0, dur: s.windup + slow + s.recover, windup: s.windup + slow, released: false };
+  this.cooldown = s.windup + slow + s.recover + s.cooldown;
+  return true;
 };
 
 ER.Player.prototype.releaseThrow = function (aimY) {
@@ -111,12 +115,18 @@ ER.Player.prototype.releaseThrow = function (aimY) {
   var spec = ER.ITEM_SPEC[it.type];
   it.state = "fly";
   it.holder = null;
-  it.x = this.x + this.facing * 18;
+  /* Spawn the object fully clear of the thrower's own body (hurtbox half-width 11). */
+  it.x = this.x + this.facing * (11 + spec.radius + 4);
   it.y = this.y - 30;
-  it.vx = this.facing * spec.speed + this.vx * 0.25;
-  it.vy = spec.vy + (aimY || 0) * 0.9;
+  /* Never let the thrower's own backwards drift push it back into them. */
+  var drift = this.vx * this.facing > 0 ? this.vx * 0.25 : 0;
+  it.vx = this.facing * spec.speed * this.throwPower + drift;
+  it.vy = spec.vy * (this.throwPower < 1 ? 0.85 : 1) + (aimY || 0) * 0.9;
   it.spin = this.facing * (spec.heavy ? 0.12 : 0.22);
   it.hitUsed = false;
+  it.damageMul = this.throwDamage;
+  /* Owner immunity: an object can never hurt the person who threw it. */
+  it.thrower = this;
   this.holding = null;
   ER.Audio.throw();
 };
@@ -142,7 +152,7 @@ ER.Player.prototype.update = function (cmd, items, level, opponent) {
         this._tryBatHit(opponent);
       }
     }
-    if (this.action.type === "throw" && !this.action.released && this.action.t >= ER.RICHIE_THROW.windup) {
+    if (this.action.type === "throw" && !this.action.released && this.action.t >= (this.action.windup || ER.RICHIE_THROW.windup)) {
       this.action.released = true;
       this.releaseThrow(cmd ? cmd.y : 0);
     }
@@ -164,14 +174,21 @@ ER.Player.prototype.update = function (cmd, items, level, opponent) {
       this.vy = (this.vy / mag) * spd;
     }
     if (Math.abs(mx) + Math.abs(my) > 0) this.walkPhase += 1;
+    if (cmd.face) this.facing = cmd.face;
     if (cmd.attack) {
+      /* Eddie: F always swings the bat. Richie: K throws (or grabs if empty-handed). */
       if (this.kind === "eddie") this.startSwing();
       else if (this.holding) this.startThrow();
       else this.tryPickup(items);
     }
     if (cmd.pickup) {
-      if (this.holding) this.drop();
-      else this.tryPickup(items);
+      /* Eddie: G grabs, then G again throws. Richie: L picks up / drops. */
+      if (this.holding) {
+        if (this.kind === "eddie") this.startThrow();
+        else this.drop();
+      } else {
+        this.tryPickup(items);
+      }
     }
   }
 
@@ -199,7 +216,7 @@ ER.Player.prototype._tryBatHit = function (opponent) {
     if (Math.abs(opponent.y - this.y) < 22 && opponent.takeDamage(s.damage, this.x)) {
       this.action.hit = true;
       ER.Audio.hit();
-      ER.Game.onHit(opponent, s.damage, this.x);
+      ER.Game.onHit(opponent, s.damage, this.x, "bat");
     }
   }
 };
@@ -222,6 +239,7 @@ ER.Player.prototype.animName = function () {
   if (this.stun > 0) return "hurt";
   if (this.action && this.action.type === "swing") return "swing";
   if (this.action && this.action.type === "throw") {
+    if (this.kind === "eddie") return this.action.released ? "jab" : "reach";
     return this.action.released ? "throw3" : "throw2";
   }
   if (Math.abs(this.vx) + Math.abs(this.vy) > 0.35) {
@@ -268,7 +286,6 @@ ER.Item.prototype.update = function (players, level) {
   if (this.state !== "fly") return;
 
   var spec = ER.ITEM_SPEC[this.type];
-  if (this.ignoreT > 0) this.ignoreT -= 1;
   this.vy += spec.gravity;
   this.x += this.vx;
   this.y += this.vy;
@@ -284,14 +301,16 @@ ER.Item.prototype.update = function (players, level) {
     for (var i = 0; i < players.length; i++) {
       var pl = players[i];
       if (!pl.alive) continue;
-      if (this.thrower && pl === this.thrower && this.ignoreT > 0) continue;
+      /* Objects never damage whoever threw them, even after bouncing off a wall. */
+      if (pl === this.thrower) continue;
       var box = pl.hurtbox();
       var r = spec.radius;
+      var dmg = Math.round(spec.damage * (this.damageMul || 1));
       if (ER.aabbHit(this.x - r, this.y - r, r * 2, r * 2, box.x, box.y, box.w, box.h)) {
-        if (Math.abs(pl.y - this.y) < 48 && pl.takeDamage(spec.damage, this.x)) {
+        if (Math.abs(pl.y - this.y) < 48 && pl.takeDamage(dmg, this.x)) {
           this.hitUsed = true;
           ER.Audio.hit();
-          ER.Game.onHit(pl, spec.damage, this.x);
+          ER.Game.onHit(pl, dmg, this.x, this.thrower ? this.thrower.kind : "object");
           this.vx *= -0.25;
           this.vy = Math.min(this.vy, 0.4);
           break;
@@ -310,6 +329,7 @@ ER.Item.prototype.update = function (players, level) {
       this.vx *= 0.4;
       this.vy = 0;
       this.spin = 0;
+      this.thrower = null;
     }
   }
 };

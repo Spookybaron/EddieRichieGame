@@ -46,14 +46,25 @@ ER.AI = {
     }
 
     var prefer = 84;
+    var toward = dx > 0 ? 1 : -1;
     if (dist < prefer - 18) {
-      cmd.x = dx > 0 ? -1 : 1; /* back off */
+      cmd.x = -toward; /* back off */
     } else if (dist > prefer + 24) {
-      cmd.x = dx > 0 ? 1 : -1;
+      cmd.x = toward;
     }
     cmd.y = Math.abs(dy) > 8 ? (dy > 0 ? 1 : -1) : 0;
-    if (dist > 48 && dist < 150 && Math.abs(dy) < 22 && self.cooldown <= 0) {
-      if ((self.idleT % 16) > 7) cmd.attack = true;
+    /* Only throw when there is open floor between Richie and Eddie, never into a
+       nearby wall (it would bounce back) and never point-blank. */
+    var spec = ER.ITEM_SPEC[self.holding.type] || { radius: 10 };
+    var wallGap = toward > 0 ? (ER.Game.level.worldW - self.x) : self.x;
+    var clearShot = wallGap > spec.radius + 40;
+    if (dist > 48 && dist < 150 && Math.abs(dy) < 22 && self.cooldown <= 0 && clearShot) {
+      if ((self.idleT % 16) > 7) {
+        /* Stop, turn to face Eddie, then throw. */
+        cmd.x = 0;
+        cmd.face = toward;
+        cmd.attack = true;
+      }
     }
     return cmd;
   },

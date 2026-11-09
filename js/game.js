@@ -50,6 +50,7 @@ ER.Game = {
     this.items = L.itemSpawns.map(function (s) { return new ER.Item(s.type, s.x, s.y); });
     this.camX = (this.eddie.x + this.richie.x) / 2 - ER.VIEW_W / 2;
     ER.Renderer.numbers = [];
+    this.hitLog = [];
     this._show("title-screen", false);
     this._show("pause-screen", false);
     this._show("win-screen", false);
@@ -113,8 +114,8 @@ ER.Game = {
       var a = el.querySelector("[data-touch='attack'] .label");
       var b = el.querySelector("[data-touch='pickup'] .label");
       if (a) a.textContent = playingRichie ? "THROW" : "BAT";
-      if (b) b.textContent = "PICK UP";
-      el.querySelector("[data-touch='pickup']").style.visibility = playingRichie ? "visible" : "hidden";
+      if (b) b.textContent = playingRichie ? "PICK UP" : "GRAB\nTHROW";
+      el.querySelector("[data-touch='pickup']").style.visibility = "visible";
     }
   },
 
@@ -140,7 +141,11 @@ ER.Game = {
     });
   },
 
-  onHit: function (victim, amount, fromX) {
+  hitLog: [],
+
+  onHit: function (victim, amount, fromX, source) {
+    this.hitLog.push({ victim: victim.kind, amount: amount, source: source || "test" });
+    if (this.hitLog.length > 200) this.hitLog.shift();
     ER.Renderer.bump(8);
     ER.Renderer.floatText(victim.x, victim.y - 58, "-" + amount, "#fff3c4");
   },
@@ -257,6 +262,12 @@ ER.Test = {
     pl.takeDamage(999, pl.x - 10);
     ER.Game._checkWin();
   },
+  /* Step the game logic n frames without waiting for the screen. */
+  step: function (n) {
+    for (var i = 0; i < n && ER.Game.screen === "play"; i++) ER.Game.update();
+    return ER.Game.snapshot();
+  },
+  hits: function () { return ER.Game.hitLog.slice(); },
   move: function (who, x, y) {
     var pl = ER.Game[who];
     if (!pl) return;

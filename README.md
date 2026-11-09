@@ -17,12 +17,14 @@ It works on a computer and on a phone. On a phone you’ll get on-screen buttons
 
 ### The idea
 
-- **Eddie** is slower and can take more hits. He swings a cricket bat (press **F**, or the BAT button).
+- **Eddie** is slower and can take more hits. He swings a cricket bat (press **F**, or the BAT button). He can also grab things and throw them (press **G**, or the GRAB / THROW button), but his throws are slower, shorter and softer than Richie’s.
 - **Richie** is quicker but not as tough. He picks up household objects and throws them (press **K** to throw, **L** to pick up or drop, or use the phone buttons).
 
 Things you’ll find around the flat: a kettle and pan by the cooker, a toaster in the kitchen, a bottle on the dining table, a chair in the dining room (it’s heavy and also gets in the way), a remote by the TV, a pillow on the sofa, and a cricket ball in the living room.
 
 The fight can run through the living room, through the arch into the dining room, and into the kitchen. The camera follows you.
+
+Nobody can be hurt by something they threw themselves.
 
 The first one to run out of health loses the round. Then you can play again.
 
@@ -30,7 +32,8 @@ The first one to run out of health loses the round. Then you can play again.
 
 **Eddie (player 1)**  
 Move: W A S D  
-Swing bat: F
+Swing bat: F  
+Grab / throw: G (press once to pick something up, again to throw it)
 
 **Richie (player 2)**  
 Move: arrow keys  
